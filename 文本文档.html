@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>智能地图应用</title>
+  <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    #header {
+      height: 60px;
+      background: #333;
+      color: white;
+      padding: 15px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    #mapContainer {
+      flex: 1;
+      position: relative;
+    }
+
+    #basemapGallery {
+      height: 120px;
+      background: #f5f5f5;
+      padding: 10px;
+      display: flex;
+      overflow-x: auto;
+      gap: 10px;
+    }
+
+    .basemap-thumb {
+      width: 150px;
+      height: 100px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: all 0.3s;
+    }
+
+    .basemap-thumb:hover {
+      border-color: #0079c1;
+    }
+  </style>
+</head>
+
+<body>
+  <header id="header">
+    <h1>智能地理信息分析平台</h1>
+  </header>
+
+  <div id="mapContainer"></div>
+
+  <div id="basemapGallery">
+    <img src="https://via.placeholder.com/150x100?text=街道图" class="basemap-thumb" data-basemap="streets">
+    <img src="https://via.placeholder.com/150x100?text=地形图" class="basemap-thumb" data-basemap="terrain">
+    <img src="https://via.placeholder.com/150x100?text=卫星图" class="basemap-thumb" data-basemap="satellite">
+  </div>
+
+  <script src="https://js.arcgis.com/4.32/"></script>
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer",
+      "esri/widgets/Legend",
+      "esri/widgets/ScaleBar",
+      "esri/widgets/Search",
+      "esri/widgets/LayerList"
+    ], (Map, MapView, FeatureLayer, Legend, ScaleBar, Search, LayerList) => {
+
+      // 初始化地图
+      const map = new Map({
+        basemap: "streets"
+      });
+
+      // 添加专题图层（替换为您的图层URL）
+      const featureLayer = new FeatureLayer({
+        url: "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/Census_Median_Age/FeatureServer/0"
+      });
+      map.add(featureLayer);
+
+      // 创建地图视图
+      const view = new MapView({
+        container: "mapContainer",
+        map: map,
+        center: [-118.2437, 34.0522], // 默认中心点
+        zoom: 10
+      });
+
+      // 添加比例尺
+      const scaleBar = new ScaleBar({
+        view: view,
+        unit: "metric"
+      });
+      view.ui.add(scaleBar, "bottom-left");
+
+      // 添加图例
+      const legend = new Legend({
+        view: view
+      });
+      view.ui.add(legend, "top-right");
+
+      // 添加搜索框
+      const search = new Search({
+        view: view
+      });
+      view.ui.add(search, "top-left");
+
+      // 添加图层列表
+      const layerList = new LayerList({
+        view: view
+      });
+      view.ui.add(layerList, "top-right");
+
+      // 底图切换功能
+      document.querySelectorAll(".basemap-thumb").forEach(thumb => {
+        thumb.addEventListener("click", () => {
+          const basemap = thumb.dataset.basemap;
+          map.basemap = basemap;
+        });
+      });
+    });
+  </script>
+</body>
+</html>
