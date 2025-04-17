@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>智能地图应用</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css">
+</head>
+<body>
+  <div class="header">
+    <h1>智能地理信息平台</h1>
+  </div>
+
+  <div id="viewDiv">
+    <div id="widgetsContainer">
+      <div id="searchWidget"></div>
+      <div id="layerListWidget"></div>
+      <div id="legendWidget"></div>
+      <div id="scaleBar"></div>
+    </div>
+  </div>
+
+  <div class="basemap-gallery">
+    <h3>底图切换</h3>
+    <div class="basemap-container">
+      <div class="basemap-item" data-basemap="streets-vector">街道图</div>
+      <div class="basemap-item" data-basemap="topo-vector">地形图</div>
+      <div class="basemap-item" data-basemap="satellite">卫星图</div>
+      <div class="basemap-item" data-basemap="navigation-vector">导航图</div>
+    </div>
+  </div>
+
+  <script src="https://js.arcgis.com/4.32/"></script>
+  <script>
+    require([
+      "esri/Map",
+      "esri/views/MapView",
+      "esri/layers/FeatureLayer",
+      "esri/widgets/Search",
+      "esri/widgets/LayerList",
+      "esri/widgets/Legend",
+      "esri/widgets/ScaleBar"
+    ], (Map, MapView, FeatureLayer, Search, LayerList, Legend, ScaleBar) => {
+      
+      // 初始化地图
+      const map = new Map({
+        basemap: "streets-vector"
+      });
+
+      // 添加专题图层（示例使用世界城市人口图层）
+      const citiesLayer = new FeatureLayer({
+        url: "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/World_Cities/FeatureServer/0",
+        popupTemplate: {
+          title: "{CITY_NAME}",
+          content: "人口：{POP}人<br>国家：{CNTRY_NAME}"
+        }
+      });
+      map.add(citiesLayer);
+
+      // 创建地图视图
+      const view = new MapView({
+        container: "viewDiv",
+        map: map,
+        center: [116.4074, 39.9042], // 北京坐标
+        zoom: 4
+      });
+
+      // 添加微件
+      const searchWidget = new Search({ view });
+      const layerList = new LayerList({ view });
+      const legend = new Legend({ view });
+      const scaleBar = new ScaleBar({ view });
+
+      // 将微件放置到指定容器
+      searchWidget.container = "searchWidget";
+      layerList.container = "layerListWidget";
+      legend.container = "legendWidget";
+      scaleBar.container = "scaleBar";
+
+      // 底图切换功能
+      document.querySelectorAll(".basemap-item").forEach(item => {
+        item.addEventListener("click", () => {
+          const basemap = item.dataset.basemap;
+          map.basemap = basemap;
+        });
+      });
+    });
+  </script>
+</body>
+</html>
