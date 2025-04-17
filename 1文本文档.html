@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>全屏地图应用</title>
+    <style>
+        /* 集成CSS样式 */
+        body {
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+        }
+
+        .header {
+            background: #004a87;
+            color: white;
+            padding: 12px 20px;
+            font-size: 1.1em;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        #viewDiv {
+            height: calc(100vh - 150px);
+            width: 100%;
+            position: relative;
+        }
+
+        .basemap-gallery {
+            height: 100px;
+            background: #f8f9fa;
+            padding: 10px;
+            border-top: 2px solid #dee2e6;
+            transition: height 0.3s;
+        }
+
+        .basemap-container {
+            display: flex;
+            gap: 8px;
+            padding: 8px 0;
+            overflow-x: auto;
+        }
+
+        .basemap-item {
+            min-width: 120px;
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .basemap-item:hover {
+            border-color: #004a87;
+            background: #e8f3ff;
+        }
+
+        #widgetsContainer {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+            background: rgba(255,255,255,0.95);
+            padding: 10px;
+            border-radius: 6px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            max-width: 280px;
+        }
+
+        .fullscreen-btn {
+            position: fixed;
+            right: 15px;
+            bottom: 15px;
+            z-index: 1000;
+            padding: 6px 12px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+    </style>
+    <link rel="stylesheet" href="https://js.arcgis.com/4.32/esri/themes/light/main.css">
+</head>
+<body>
+    <!-- 页眉区域 -->
+    <header class="header">
+        <h1>智能地理分析平台</h1>
+    </header>
+
+    <!-- 地图容器 -->
+    <div id="viewDiv">
+        <!-- 微件容器 -->
+        <div id="widgetsContainer">
+            <div id="searchWidget"></div>
+            <div id="layerListWidget" style="margin:10px 0"></div>
+            <div id="legendWidget"></div>
+            <div id="scaleBar"></div>
+        </div>
+    </div>
+
+    <!-- 底图库区域 -->
+    <div class="basemap-gallery">
+        <h4 style="margin:0 0 8px 5px">底图切换</h4>
+        <div class="basemap-container">
+            <div class="basemap-item" data-basemap="streets-vector">街道地图</div>
+            <div class="basemap-item" data-basemap="topo-vector">地形图</div>
+            <div class="basemap-item" data-basemap="satellite">卫星影像</div>
+            <div class="basemap-item" data-basemap="navigation-vector">导航地图</div>
+        </div>
+    </div>
+
+    <!-- 全屏切换按钮 -->
+    <button class="fullscreen-btn" title="切换全屏">⤢</button>
+
+    <script src="https://js.arcgis.com/4.32/"></script>
+    <script>
+        require([
+            "esri/Map",
+            "esri/views/MapView",
+            "esri/layers/FeatureLayer",
+            "esri/widgets/Search",
+            "esri/widgets/LayerList",
+            "esri/widgets/Legend",
+            "esri/widgets/ScaleBar"
+        ], (Map, MapView, FeatureLayer, Search, LayerList, Legend, ScaleBar) => {
+
+            // 初始化地图
+            const map = new Map({
+                basemap: "streets-vector"
+            });
+
+            // 添加专题图层（示例：中国主要城市）
+            const cityLayer = new FeatureLayer({
+                url: "https://services.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/World_Cities/FeatureServer/0",
+                definitionExpression: "CNTRY_NAME = 'China'",
+                popupTemplate: {
+                    title: "{CITY_NAME}",
+                    content: [{
+                        type: "fields",
+                        fieldInfos: [
+                            { fieldName: "POP", label: "人口" },
+                            { fieldName: "CNTRY_NAME", label: "国家" }
+                        ]
+                    }]
+                }
+            });
+            map.add(cityLayer);
+
+            // 创建地图视图
+            const view = new MapView({
+                container: "viewDiv",
+                map: map,
+                center: [104.1954, 35.8617], // 中国中心坐标
+                zoom: 4
+            });
+
+            // 初始化微件
+            const searchWidget = new Search({ view });
+            const layerList = new LayerList({ view });
+            const legend = new Legend({ view });
+            const scaleBar = new ScaleBar({ view });
+
+            // 定位微件
+            searchWidget.container = "searchWidget";
+            layerList.container = "layerListWidget";
+            legend.container = "legendWidget";
+            scaleBar.container = "scaleBar";
+
+            // 底图切换功能
+            document.querySelectorAll(".basemap-item").forEach(item => {
+                item.addEventListener("click", () => {
+                    map.basemap = item.dataset.basemap;
+                });
+            });
+
+            // 全屏切换功能
+            document.querySelector(".fullscreen-btn").addEventListener("click", () => {
+                const gallery = document.querySelector(".basemap-gallery");
+                gallery.classList.toggle("hidden");
+                view.resize();  // 重要：通知地图调整尺寸
+                
+                // 自动调整地图区域高度
+                const headerHeight = document.querySelector(".header").offsetHeight;
+                const viewDiv = document.getElementById("viewDiv");
+                viewDiv.style.height = gallery.classList.contains("hidden") 
+                    ? `calc(100vh - ${headerHeight}px)`
+                    : "calc(100vh - 150px)";
+            });
+        });
+    </script>
+</body>
+</html>
